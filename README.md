@@ -3,15 +3,13 @@
 Code of paper: "TSMRG: Temporal Semantic Enhancement for Medical Report Generation with Longitudinal Data".
 
 ## Installation
-1. Create a new conda environment.
+Create a new conda environment and install the dependencies in requirements.txt.
 ```Shell
 conda create -n tsmrg python=3.10
 conda activate tsmrg
-```
-3. Install the dependencies in requirements.txt.
-```Shell
 pip install -r requirements.txt
 ```
+
 ## Datasets Preparation
 * **MIMIC-CXR**: The images can be downloaded from [physionet](https://www.physionet.org/content/mimic-cxr-jpg/2.0.0/), and put it under `data/mimic_cxr/images`.  First, the annotation file `mimic_annotation.json` is fully aligned with the [HERGen](https://github.com/HKU-MedAI/HERGen), ensuring identical entry counts and dataset structure. In addition to the standard entries, we have extended the annotation file by adding the following fields:  
 
@@ -50,12 +48,12 @@ TSMRG
 ````
 
 ## Training
-**stage 1**: Training using individual image-text pairs
+**stage 1**: Training with independent image-text pairs
 ```
 bash train_mimic_cxr_step1.sh
 ```
 
-**stage 2**: Training the model using additional contrastive alignment
+**stage 2**: Training the whole model with longitudinal data
 ```
 bash train_mimic_cxr_step2.sh
 ```

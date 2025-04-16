@@ -2,8 +2,8 @@ save_dir=results/output_step2
 mkdir $save_dir
 
 
-# datafile=/path/to/mimic_annotation.json
-datafile=/path/to/longitudinal_mimic_annotation.json
+# datafile=./data/mimic_cxr/mimic_annotation.json
+datafile=./data/mimic_cxr/longitudinal_mimic_annotation.json
 
 images_path=/path/to/mimic-cxr-jpg/images/
 

@@ -1,12 +1,11 @@
-datafile=/path/to/mimic_annotation.json
-
-
 save_dir=results/output_step2
+datafile=./data/mimic_cxr/mimic_annotation.json
+
 ckpt_path=/path/to/model.pth
 images_path=/path/to/mimic-cxr-jpg/images/
 
 
-CUDA_VISIBLE_DEVICES=2, python main_test.py \
+CUDA_VISIBLE_DEVICES=1, python main_test.py \
 --n_gpu 1 \
 --image_dir $images_path \
 --ann_path $datafile \

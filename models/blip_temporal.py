@@ -103,7 +103,7 @@ class BLIP_Decoder(nn.Module):
         group_size = 49
         self.min_seq_len = 2
         self.max_seq_len = 5
-        num_heads = 4
+        num_heads = 8
         self.visual_temporal_model = CascadedTemporalModule(
             group_size=group_size,
             block_size=self.max_seq_len,

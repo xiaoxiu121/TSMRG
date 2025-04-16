@@ -136,9 +136,11 @@ def main():
 
     # build trainer and start to train
     if args.model_name=='temporal_model':
+        # training in stage 2
         trainer = TrainerTemporal(model, criterion_cls, base_probs, metrics, args, train_dataloader, val_dataloader, test_dataloader, device, utils.is_main_process)
         trainer.train()
     else:
+        # training in stage 1
         trainer = Trainer(model, criterion_cls, base_probs, metrics, args, train_dataloader, val_dataloader, test_dataloader, device, utils.is_main_process)
         trainer.train()
 
