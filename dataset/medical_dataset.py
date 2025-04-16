@@ -68,7 +68,7 @@ class generation_train(Dataset):
         prompt = ' '.join(prompt)+' '
         caption =  my_pre_caption(ann['report'], self.max_words)
         cls_labels = torch.from_numpy(np.array(cls_labels)).long()
-        clip_indices = ann['clip_indices'][:self.args.clip_k] # 直接就选择了前K个最为相似的text样本
+        clip_indices = ann['clip_indices'][:self.args.clip_k] 
         clip_memory = self.clip_features[clip_indices]
         clip_memory = torch.from_numpy(clip_memory).float()
 
@@ -88,7 +88,7 @@ class generation_eval(Dataset):
         self.dataset = dataset
         self.args = args
         with open('./data/mimic_cxr/clip_text_features.json', 'r') as f:
-            self.clip_features = np.array(json.load(f)) # 是按照记录来索引的！找到最为相似的图文特征
+            self.clip_features = np.array(json.load(f)) 
         
     def __len__(self):
         return len(self.ann)

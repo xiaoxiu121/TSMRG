@@ -15,7 +15,6 @@ CUDA_VISIBLE_DEVICES=1, python main_test.py \
 --batch_size 16 \
 --save_dir $save_dir \
 --seed 456789 \
---beam_size 3 \
 --load_pretrained $ckpt_path \
 2>&1 | tee "$save_dir/log_test.log" 
 

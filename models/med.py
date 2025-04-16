@@ -117,7 +117,7 @@ class BertSelfAttention(nn.Module):
             self.value = nn.Linear(config.hidden_size, self.all_head_size)
 
         self.dropout = nn.Dropout(config.attention_probs_dropout_prob)
-        self.position_embedding_type = getattr(config, "position_embedding_type", "absolute") # 默认值是absolute;图像数据，是没有增加position_ids
+        self.position_embedding_type = getattr(config, "position_embedding_type", "absolute") 
         if self.position_embedding_type == "relative_key" or self.position_embedding_type == "relative_key_query":
             self.max_position_embeddings = config.max_position_embeddings
             self.distance_embedding = nn.Embedding(2 * config.max_position_embeddings - 1, self.attention_head_size)
@@ -283,7 +283,7 @@ class BertAttention(nn.Module):
             past_key_value,
             output_attentions,
         )
-        attention_output = self.output(self_outputs[0], hidden_states) # context_layer,
+        attention_output = self.output(self_outputs[0], hidden_states) 
         outputs = (attention_output,) + self_outputs[1:]  # add attentions if we output them (attention_output, past_key_value)
         return outputs
 
@@ -349,9 +349,9 @@ class BertLayer(nn.Module):
             head_mask,
             output_attentions=output_attentions,
             past_key_value=self_attn_past_key_value,
-        )# 自己先做self_attn,是梯形的mask
-        attention_output = self_attention_outputs[0] # (context_layer, past_k_v)
-        outputs = self_attention_outputs[1:-1] # 去掉第一位？
+        )
+        attention_output = self_attention_outputs[0]
+        outputs = self_attention_outputs[1:-1] 
         present_key_value = self_attention_outputs[-1]
         if mode=='multimodal':
             assert encoder_hidden_states is not None, "encoder_hidden_states must be given for cross-attention layers"
@@ -581,7 +581,7 @@ class BertModel(BertPreTrainedModel):
 
         self.embeddings = BertEmbeddings(config)
         
-        self.encoder = BertEncoder(config) # 只用bert的encoder部分？
+        self.encoder = BertEncoder(config) 
 
         self.pooler = BertPooler(config) if add_pooling_layer else None
 
@@ -736,8 +736,7 @@ class BertModel(BertPreTrainedModel):
             
         # We can provide a self-attention mask of dimensions [batch_size, from_seq_length, to_seq_length]
         # ourselves in which case we just need to make it broadcastable to all heads.
-        extended_attention_mask: torch.Tensor = self.get_extended_attention_mask(attention_mask, input_shape, 
-                                                                                 device, is_decoder) # 生成解码器的decoder，是梯形的
+        extended_attention_mask: torch.Tensor = self.get_extended_attention_mask(attention_mask, input_shape, device, is_decoder) 
 
         # If a 2D or 3D attention mask is provided for the cross-attention
         # we need to make broadcastable to [batch_size, num_heads, seq_length, seq_length]

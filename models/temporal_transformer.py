@@ -30,7 +30,7 @@ class Block(nn.Module):
         ))
         m = self.mlp
         self.mlpf = lambda x: m.dropout(
-            m.c_proj(m.act(m.c_fc(x))))  # MLP forward
+            m.c_proj(m.act(m.c_fc(x))))
         
         self.attn = nn.MultiheadAttention(
                 embed_dim=n_embd, num_heads=num_heads, batch_first=True)
@@ -79,9 +79,8 @@ class CascadedTemporalModule(nn.Module):
         
         self.map_size = int(math.sqrt(group_size))
 
-        # 对时序处理        
+        # CTT: casual temporal transformer     
         self.transformer = nn.ModuleDict(dict(
-            # wpe=nn.Embedding(block_size, n_embd),
             wpe=nn.Embedding(50, n_embd),
             drop=nn.Dropout(embd_pdrop),
             h=nn.ModuleList([Block(n_embd, num_heads, embd_pdrop, block_size, group_size)
@@ -89,7 +88,7 @@ class CascadedTemporalModule(nn.Module):
             ln_f=nn.LayerNorm(n_embd)
         ))
         
-        # 对空间处理
+        # ST : spatial transformer
         self.transformer2 = nn.ModuleDict(dict(
             drop=nn.Dropout(embd_pdrop),
             h=nn.ModuleList([Block(n_embd, num_heads, embd_pdrop, block_size, group_size, casual=False)
@@ -98,13 +97,6 @@ class CascadedTemporalModule(nn.Module):
         ))
         self.pos_embedding_img = nn.Parameter(torch.randn(1, group_size, n_embd))
 
-        
-
-        # self.pos_embed = nn.Parameter(
-        #     torch.randn(1, block_size, 1, n_embd) * .02)
-
-        # self.tpe = TemporalPositionalEncoding(
-        #     d_model=n_embd, learnable=False)  # add temporal embeddings
 
         # init all weights, and apply a special scaled init to the residual projections, per GPT-2 paper
         self.apply(self._init_weights)
@@ -161,7 +153,6 @@ class CascadedTemporalModule(nn.Module):
         x = self.transformer2.drop(x + pos_emb_img)
         for i in range(self.n_layer-1):
             x = self.transformer2.h[i](x)
-
         if return_atten:
             x, attention_weights = self.transformer2.h[-1](x, return_atten)
             x = self.transformer2.ln_f(x)

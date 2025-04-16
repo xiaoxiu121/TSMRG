@@ -87,7 +87,7 @@ class BLIP_Decoder(nn.Module):
         self.memory = Transformer(d_model=512,
                                   num_encoder_layers=2,
                                   num_decoder_layers=2,
-                                  num_queries=1) # meomry是干啥的
+                                  num_queries=1) 
         
         
         url='BiomedVLP-CXR-BERT-specialized'
@@ -129,7 +129,7 @@ class BLIP_Decoder(nn.Module):
     def forward(self, images, clip_memory, prompt, caption, report_comparision, cls_labels, batch_mask, study_date, criterion_cls, base_probs):
         B, T, C, H, W = images.shape
         batch_len = batch_mask.sum(dim=1)
-        nonull_images = images[batch_mask] # 把B和length整合 ,B 3, 248,248的图像
+        nonull_images = images[batch_mask] 
         image_embs, image_embs_avg = self.visual_encoder(nonull_images)
         
         nonull_image_embs_list = torch.split(
@@ -146,13 +146,13 @@ class BLIP_Decoder(nn.Module):
         temporal_image_embs = self.visual_temporal_model(
             image_embs, study_date)
         temporal_image_embs = rearrange(
-            temporal_image_embs, "(b t) n d -> b t n d", b=B, t=T) # B, T, 49, 512
-        temporal_nonull_img_embs = temporal_image_embs[batch_mask] # 41, 49,512
+            temporal_image_embs, "(b t) n d -> b t n d", b=B, t=T) 
+        temporal_nonull_img_embs = temporal_image_embs[batch_mask] 
           
         prompts_captions = []
         captions_bt = []
         report_comparision_bt = []
-        for j in range(B): # 长度为18
+        for j in range(B): 
             for i in range(T): 
                 prompts_captions.append(prompt[i][j] + caption[i][j])
                 if len(caption[i][j])>0:
@@ -161,10 +161,10 @@ class BLIP_Decoder(nn.Module):
                     report_comparision_bt.append(report_comparision[i][j])
         
         text = self.tokenizer(prompts_captions, padding='longest', truncation=True, return_tensors="pt").to(images.device)
-        text.input_ids[:,0] = self.tokenizer.bos_token_id # 把第一位赋值为bos，最后一位不用管
+        text.input_ids[:,0] = self.tokenizer.bos_token_id 
         
-        input_ids = torch.stack(torch.chunk(text.input_ids, B, dim=0),dim=0) # B, T, 512
-        attention_mask = torch.stack(torch.chunk(text.attention_mask, B, dim=0),dim=0) # B, T, 512
+        input_ids = torch.stack(torch.chunk(text.input_ids, B, dim=0),dim=0) 
+        attention_mask = torch.stack(torch.chunk(text.attention_mask, B, dim=0),dim=0)
         
         batch_input_ids = rearrange(input_ids, "b t d -> (b t) d")
         batch_attention_mask = rearrange(attention_mask, "b t d -> (b t) d")
@@ -174,7 +174,6 @@ class BLIP_Decoder(nn.Module):
         decoder_targets = batch_input_ids.masked_fill(batch_input_ids == self.tokenizer.pad_token_id, -100) 
         decoder_targets[:,:self.prompt_length] = -100 # 前N个不解码
 
-        # 给出了labels 
         decoder_output = self.text_decoder(batch_input_ids, 
                                            attention_mask = batch_attention_mask, 
                                            encoder_hidden_states = temporal_nonull_img_embs,
@@ -187,23 +186,23 @@ class BLIP_Decoder(nn.Module):
         ##########################
         # NxKxC -> KxNxC        
         clip_memory = clip_memory[batch_mask] 
-        clip_memory = torch.permute(clip_memory, (1, 0, 2)) # 21,16,512  
+        clip_memory = torch.permute(clip_memory, (1, 0, 2)) 
         
-        embeds_ori =  torch.permute(temporal_nonull_img_embs,(0,2,1)) # 41, 512, 49
+        embeds_ori =  torch.permute(temporal_nonull_img_embs,(0,2,1)) 
         embeds_ori = embeds_ori.view(temporal_nonull_img_embs.size(0), temporal_nonull_img_embs.size(-1), 7, 7)
-        avg_embeds_ori = self.avg_fnt(embeds_ori).flatten(1) # 41, 512
-        query_embed = self.vision_proj(avg_embeds_ori) # 16,512
-        hs = self.memory(clip_memory, None, query_embed.unsqueeze(0), None) # 1,16,1,512
+        avg_embeds_ori = self.avg_fnt(embeds_ori).flatten(1) 
+        query_embed = self.vision_proj(avg_embeds_ori) 
+        hs = self.memory(clip_memory, None, query_embed.unsqueeze(0), None) 
         # Nx512
         hs = hs.squeeze(0).squeeze(1)
-        avg_embeds = torch.cat((avg_embeds_ori, hs), 1) # 16 2560
+        avg_embeds = torch.cat((avg_embeds_ori, hs), 1) 
 
         cls_preds = self.cls_head(avg_embeds)
-        cls_preds = cls_preds.view(-1, 4, 18) # 变成4分类问题了
+        cls_preds = cls_preds.view(-1, 4, 18) 
         # logit adjustment
         cls_preds[:, 1, :] += torch.log(torch.from_numpy(base_probs)).view(1, -1).to(images.device)
         cls_labels = cls_labels[batch_mask]
-        loss_cls = criterion_cls(cls_preds, cls_labels) # [4,18] 与 [18]
+        loss_cls = criterion_cls(cls_preds, cls_labels) 
         
         # contrastive loss
         tokenized_data = self.encode_tokenizer.batch_encode_plus(
@@ -224,7 +223,7 @@ class BLIP_Decoder(nn.Module):
         B, T, C, H, W = images.shape
         study_date = study_date.to(images.device)
         batch_len = batch_mask.sum(dim=1)
-        nonull_images = images[batch_mask] # 把B和length整合 ,B 3, 248,248的图像
+        nonull_images = images[batch_mask] 
         image_embs, _ = self.visual_encoder(nonull_images)
         
         # resume temporal array
@@ -248,11 +247,11 @@ class BLIP_Decoder(nn.Module):
         
         # NxKxC -> KxNxC
         clip_memory = clip_memory[batch_mask]        
-        clip_memory = torch.permute(clip_memory, (1, 0, 2)) # B,clip_k,512 -> clip_k,B,512 
-        embeds_ori =  torch.permute(temporal_nonull_img_embs,(0,2,1)) # 41, 512, 49
+        clip_memory = torch.permute(clip_memory, (1, 0, 2)) 
+        embeds_ori =  torch.permute(temporal_nonull_img_embs,(0,2,1)) 
         embeds_ori = embeds_ori.view(temporal_nonull_img_embs.size(0), temporal_nonull_img_embs.size(-1), 7, 7)
-        avg_embeds_ori = self.avg_fnt(embeds_ori).flatten(1) # 41, 512
-        query_embed = self.vision_proj(avg_embeds_ori) # 16,512
+        avg_embeds_ori = self.avg_fnt(embeds_ori).flatten(1) 
+        query_embed = self.vision_proj(avg_embeds_ori) 
         hs = self.memory(clip_memory, None, query_embed.unsqueeze(0), None)
         # Nx512
         hs = hs.squeeze(0).squeeze(1)
@@ -268,24 +267,23 @@ class BLIP_Decoder(nn.Module):
         if not sample:
             temporal_nonull_img_embs = temporal_nonull_img_embs.repeat_interleave(num_beams,dim=0)
             
-        image_atts = torch.ones(temporal_nonull_img_embs.size()[:-1],dtype=torch.long).to(images.device)# 都是1
+        image_atts = torch.ones(temporal_nonull_img_embs.size()[:-1],dtype=torch.long).to(images.device)
         model_kwargs = {"encoder_hidden_states": temporal_nonull_img_embs, "encoder_attention_mask":image_atts}
         
         
         prompts_only = []
         cls_preds = cls_preds_ori.cpu().numpy().tolist()
-        for j in range(len(cls_preds)): # 长度为18
+        for j in range(len(cls_preds)): 
             prompt = ' '.join([SCORES[c] for c in cls_preds[j]])+' '
             prompts_only.append(prompt)
 
-        text = self.tokenizer(prompts_only, return_tensors="pt") # 输入只有prompt,没有其他 
-        input_ids = text.input_ids.to(images.device) # 101为开头，102为结尾
+        text = self.tokenizer(prompts_only, return_tensors="pt") # 输入只有prompt 
+        input_ids = text.input_ids.to(images.device) 
         attn_masks = text.attention_mask.to(images.device)
         input_ids[:,0] = self.tokenizer.bos_token_id
-        input_ids = input_ids[:, :-1] # 为何去掉一维，去掉了102结尾
+        input_ids = input_ids[:, :-1] 
         attn_masks = attn_masks[:, :-1] 
         
-        #beam search，没有给labels吗？无语
         outputs = self.text_decoder.generate(input_ids=input_ids,
                                              min_length=min_length, # 4.25 Transformers
                                              max_new_tokens=max_length,

@@ -77,7 +77,6 @@ class BaseTrainer(object):
                 self.train_dataloader.sampler.set_epoch(epoch)
 
             result = self._train_epoch_blip(epoch)
-            # result = {}
             dist.barrier()
             result = self.eval_blip(result)
 
@@ -151,7 +150,6 @@ class Trainer(BaseTrainer):
             val_gts, val_res = [], []
             for batch_idx, (images, captions, cls_labels, clip_memory) in enumerate(self.val_dataloader):
                 images = images.to(self.device) 
-                # cls_labels = cls_labels.numpy()
                 clip_memory = clip_memory.to(self.device)
                 ground_truths = captions
                 reports, cls_preds, cls_preds_logits = self.model.module.generate(images, clip_memory, sample=False, num_beams=self.args.beam_size, max_length=self.args.gen_max_len, min_length=self.args.gen_min_len)
@@ -175,8 +173,6 @@ class Trainer(BaseTrainer):
 
                 val_res.extend(reports)
                 val_gts.extend(ground_truths)
-                
-                
 
             #######
             logits = np.concatenate(logits, axis=0)

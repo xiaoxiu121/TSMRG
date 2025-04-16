@@ -11,7 +11,7 @@ pip install -r requirements.txt
 ```
 
 ## Datasets Preparation
-* **MIMIC-CXR**: The images can be downloaded from [physionet](https://www.physionet.org/content/mimic-cxr-jpg/2.0.0/), and put it under `data/mimic_cxr/images`.  First, the annotation file `mimic_annotation.json` is fully aligned with the [HERGen](https://github.com/HKU-MedAI/HERGen), ensuring identical entry counts and dataset structure. In addition to the standard entries, we have extended the annotation file by adding the following fields:  
+* **MIMIC-CXR**: The images can be downloaded from [physionet](https://www.physionet.org/content/mimic-cxr-jpg/2.0.0/).  First, the annotation file `mimic_annotation.json` is fully aligned with the [HERGen](https://github.com/HKU-MedAI/HERGen), ensuring identical entry counts and dataset structure. In addition to the standard entries, we have extended the annotation file by adding the following fields:  
 
      * `labels` and `clip_indices`: These are essential for classification tasks and are derived from [PromptRMG](https://github.com/jhb86253817/PromptMRG).
      * `report_comparision`: This field contains a temporally-aware report summary, generated using the [InternLM2-20B](https://huggingface.co/internlm/internlm2-20b) model.
@@ -35,10 +35,6 @@ TSMRG
       |--clip_text_features.json
       |--mimic_annotation.json
       |--longitudinal_mimic_annotation.json
-      |--images
-         |--p10
-         |--p11
-         ...
          ...
 |--checkpoints
    |--stanford

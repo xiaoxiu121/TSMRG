@@ -77,7 +77,6 @@ class BaseTrainer(object):
                 self.train_dataloader.sampler.set_epoch(epoch)
 
             result = self._train_epoch_blip(epoch)
-            # result = {}
             dist.barrier()
             result = self.eval_blip(result)
 

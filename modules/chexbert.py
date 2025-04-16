@@ -36,8 +36,6 @@ class CheXbert(nn.Module):
                 elif 'linear_heads' in key:
                     new_key = key.replace('module.linear_heads.', 'linear_heads.')
                 new_state_dict[new_key] = value
-            print(11111111111111111, state_dict.keys())
-            print(222222222222222222, new_state_dict.keys())
 
             self.load_state_dict(new_state_dict)
 
@@ -63,7 +61,7 @@ class CheXbert(nn.Module):
             cls = self.dropout(cls)
 
             predictions = []
-            for i in range(14): # 为14种疾病，分别预测情况
+            for i in range(14): # 为14种疾病，分别预测
                 predictions.append(self.linear_heads[i](cls).argmax(dim=1)) # 取出的值范围在【0-3】
 
         # Nx14

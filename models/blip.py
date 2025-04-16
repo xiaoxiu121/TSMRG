@@ -58,8 +58,6 @@ class BLIP_Decoder(nn.Module):
             self.visual_encoder = blip_resnet(args)
             
         self.args = args
-        
-        
         self.cls_head = nn.Linear(vision_width+512, 18*4)
         nn.init.normal_(self.cls_head.weight, std=0.001)
         if self.cls_head.bias is not None:
@@ -83,7 +81,7 @@ class BLIP_Decoder(nn.Module):
         self.memory = Transformer(d_model=512,
                                   num_encoder_layers=2,
                                   num_decoder_layers=2,
-                                  num_queries=1) # meomry是干啥的
+                                  num_queries=1) 
         
         # define CXR-BERT
         url='BiomedVLP-CXR-BERT-specialized'
@@ -102,31 +100,30 @@ class BLIP_Decoder(nn.Module):
 
         ##########################
         # NxKxC -> KxNxC
-        clip_memory = torch.permute(clip_memory, (1, 0, 2)) # 21,16,512  
-        query_embed = self.vision_proj(avg_embeds_ori) # 16,512
-        hs = self.memory(clip_memory, None, query_embed.unsqueeze(0), None) # 1,16,1,512
+        clip_memory = torch.permute(clip_memory, (1, 0, 2)) 
+        query_embed = self.vision_proj(avg_embeds_ori)
+        hs = self.memory(clip_memory, None, query_embed.unsqueeze(0), None) 
         # Nx512
         hs = hs.squeeze(0).squeeze(1)
-        avg_embeds = torch.cat((avg_embeds_ori, hs), 1) # 16 2560
+        avg_embeds = torch.cat((avg_embeds_ori, hs), 1) 
 
         cls_preds = self.cls_head(avg_embeds)
-        cls_preds = cls_preds.view(-1, 4, 18) # 变成4分类问题了
+        cls_preds = cls_preds.view(-1, 4, 18) 
         # logit adjustment
         cls_preds[:, 1, :] += torch.log(torch.from_numpy(base_probs)).view(1, -1).to(image.device)
-        loss_cls = criterion_cls(cls_preds, cls_labels) # [4,18] 与 [18]
+        loss_cls = criterion_cls(cls_preds, cls_labels)
         
         prompts_captions = []
-        for j in range(image_embeds.size(0)): # 长度为18
+        for j in range(image_embeds.size(0)): 
             prompts_captions.append(prompt[j] + caption[j])
         
         text = self.tokenizer(prompts_captions, padding='longest', truncation=True, return_tensors="pt").to(image.device)
-        text.input_ids[:,0] = self.tokenizer.bos_token_id # 把第一位赋值为bos，最后一位不用管
+        text.input_ids[:,0] = self.tokenizer.bos_token_id 
 
         
         decoder_targets = text.input_ids.masked_fill(text.input_ids == self.tokenizer.pad_token_id, -100) 
         decoder_targets[:,:self.prompt_length] = -100 # 前N个不解码
 
-        # 给出了labels 
         decoder_output = self.text_decoder(text.input_ids, 
                                            attention_mask = text.attention_mask, 
                                            encoder_hidden_states = image_embeds,
@@ -136,7 +133,7 @@ class BLIP_Decoder(nn.Module):
           
         loss_lm = decoder_output.loss     
         
-        # 增加report 对比学习的loss
+        # 增加对比学习loss
         tokenized_data = self.encode_tokenizer.batch_encode_plus(
             caption, add_special_tokens=True,
             padding='longest',
@@ -147,17 +144,16 @@ class BLIP_Decoder(nn.Module):
         text_embs = self.text_encoder.get_projected_text_embeddings(
             input_ids=input_ids, attention_mask=attention_mask)
         
-        # TODO: soft contrastive loss
         img_embs = self.img_emb_projection(avg_embeds_ori)
         cont_loss = self.infonce_loss(img_embs, text_embs, 0.07)
                    
         return loss_lm, loss_cls, cont_loss
         
     def generate(self, image, clip_memory, sample=False, num_beams=3, max_length=100, min_length=10, top_p=0.9, repetition_penalty=1.0):
-        image_embeds, avg_embeds = self.visual_encoder(image) # 16,49,2048; 16,2560
+        image_embeds, avg_embeds = self.visual_encoder(image) 
         
         # NxKxC -> KxNxC
-        clip_memory = torch.permute(clip_memory, (1, 0, 2)) # B,clip_k,512 -> clip_k,B,512 
+        clip_memory = torch.permute(clip_memory, (1, 0, 2))  
         query_embed = self.vision_proj(avg_embeds)
         hs = self.memory(clip_memory, None, query_embed.unsqueeze(0), None)
         # Nx512
@@ -172,25 +168,24 @@ class BLIP_Decoder(nn.Module):
         cls_preds = torch.argmax(cls_preds, dim=1).cpu().numpy().tolist()
 
         prompts = []
-        for j in range(len(cls_preds)): # 长度为18
+        for j in range(len(cls_preds)): 
             prompt = ' '.join([SCORES[c] for c in cls_preds[j]])+' '
             prompts.append(prompt)
 
         if not sample:
             image_embeds = image_embeds.repeat_interleave(num_beams,dim=0)
             
-        image_atts = torch.ones(image_embeds.size()[:-1],dtype=torch.long).to(image.device)# 都是1
+        image_atts = torch.ones(image_embeds.size()[:-1],dtype=torch.long).to(image.device)
         model_kwargs = {"encoder_hidden_states": image_embeds, "encoder_attention_mask":image_atts}
         
 
-        text = self.tokenizer(prompts, return_tensors="pt") # 输入只有prompt,没有其他 
-        input_ids = text.input_ids.to(image.device) # 101为开头，102为结尾
+        text = self.tokenizer(prompts, return_tensors="pt") # 输入只有prompt 
+        input_ids = text.input_ids.to(image.device) 
         attn_masks = text.attention_mask.to(image.device)
         input_ids[:,0] = self.tokenizer.bos_token_id
-        input_ids = input_ids[:, :-1] # 为何去掉一维，去掉了102结尾
+        input_ids = input_ids[:, :-1] 
         attn_masks = attn_masks[:, :-1] 
         
-        #beam search，没有给labels吗？无语
         outputs = self.text_decoder.generate(input_ids=input_ids,
                                              min_length=min_length, # 4.25 Transformers
                                              max_new_tokens=max_length,
