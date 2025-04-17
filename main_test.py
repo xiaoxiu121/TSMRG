@@ -59,9 +59,11 @@ def parse_agrs():
 
     # cls head
     parser.add_argument('--cls_weight', type=float, default=4, help='Loss weight of classification branch.')
-    parser.add_argument('--con_weight', type=float, default=1, help='Loss weight of classification branch.')
     parser.add_argument('--clip_k', type=int, default=21, help='Number of retrieved reports from database.')
-    # model name
+    # contrastive learning
+    parser.add_argument('--con_weight', type=float, default=1, help='Loss weight of contrastive learning branch.')
+
+    # model name for 2 stages
     parser.add_argument('--model_name', type=str, default='encoder_decoder', choices=['encoder_decoder', 'temporal_model'], help='input training stage')
 
     args = parser.parse_args()
