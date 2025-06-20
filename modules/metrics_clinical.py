@@ -59,24 +59,34 @@ class CheXbertMetrics():
 
         fp = (res_chexbert * ~gts_chexbert).astype(float)
         fn = (~res_chexbert * gts_chexbert).astype(float)
-
-        tp_cls = tp.sum(0)
-        fp_cls = fp.sum(0)
-        fn_cls = fn.sum(0)
-
-        tp_eg = tp.sum(1)
-        fp_eg = fp.sum(1)
-        fn_eg = fn.sum(1)
-
+        
+        #########################
+        tp_cls = tp.sum(0) # 每个类别的 TP 总数
+        fp_cls = fp.sum(0) # 每个类别的 FP 总数
+        fn_cls = fn.sum(0) # 每个类别的 FN 总数
+        
+        # 宏平均
         precision_class = np.nan_to_num(tp_cls / (tp_cls + fp_cls))
         recall_class = np.nan_to_num(tp_cls / (tp_cls + fn_cls))
         f1_class = np.nan_to_num(tp_cls / (tp_cls + 0.5 * (fp_cls + fn_cls)))
 
+        tp_eg = tp.sum(1)
+        fp_eg = fp.sum(1)
+        fn_eg = fn.sum(1)
+        
         scores = {
-            # example-based CE metrics
-            'ce_precision': np.nan_to_num(tp_eg / (tp_eg + fp_eg)).mean(),
-            'ce_recall': np.nan_to_num(tp_eg / (tp_eg + fn_eg)).mean(),
-            'ce_f1': np.nan_to_num(tp_eg / (tp_eg + 0.5 * (fp_eg + fn_eg))).mean(),
+            # macro
+            'ce_precision': precision_class.mean(),
+            'ce_recall': recall_class.mean(),
+            'ce_f1': f1_class.mean(),
+            # micro
+            'ce_precision_micro': tp_cls.sum() / (tp_cls.sum() + fp_cls.sum()),
+            'ce_recall_micro': tp_cls.sum() / (tp_cls.sum() + fn_cls.sum()),
+            'ce_f1_micro': tp_cls.sum() / (tp_cls.sum() + 0.5 * (fp_cls.sum() + fn_cls.sum())),
+             # example-based CE metrics
+            'ce_precision_example': np.nan_to_num(tp_eg / (tp_eg + fp_eg)).mean(),
+            'ce_recall_example': np.nan_to_num(tp_eg / (tp_eg + fn_eg)).mean(),
+            'ce_f1_example': np.nan_to_num(tp_eg / (tp_eg + 0.5 * (fp_eg + fn_eg))).mean(),
             'ce_num_examples': float(len(res_chexbert)),
         }
         return scores
